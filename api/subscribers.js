@@ -1,4 +1,4 @@
-import { kv } from '@vercel/kv'
+import { get } from '@vercel/edge-config'
 
 const TOTAL_FREE_SPOTS = 5
 
@@ -8,13 +8,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const count = (await kv.get('waitlist_count')) ?? 0
+    const count = (await get('waitlist_count')) ?? 0
     console.log('[subscribers] waitlist_count:', count)
     const remaining = Math.max(0, TOTAL_FREE_SPOTS - count)
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate')
+    res.setHeader('Cache-Control', 'no-store')
     return res.status(200).json({ count, remaining })
   } catch (err) {
-    console.error('[subscribers] KV read error:', err)
+    console.error('[subscribers] Edge Config read error:', err)
     return res.status(500).json({ error: 'Failed to read subscriber count' })
   }
 }

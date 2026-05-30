@@ -7,7 +7,7 @@ import Footer from './sections/Footer'
 import { useSubscriberCount } from './hooks/useSubscriberCount'
 
 export default function App() {
-  const [remaining, setRemaining] = useSubscriberCount()
+  const [remaining, refresh] = useSubscriberCount()
 
   return (
     <div className="font-body antialiased bg-paper text-ink overflow-x-hidden">
@@ -15,7 +15,7 @@ export default function App() {
       <Hero remaining={remaining} />
       <Problema />
       <Solucion />
-      <Formulario remaining={remaining} onSubscribed={setRemaining} />
+      <Formulario remaining={remaining} onSubscribed={refresh} />
       <FAQSection />
       <Footer />
     </div>

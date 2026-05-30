@@ -14,11 +14,8 @@ export default function WaitlistForm({ onSubscribed }) {
         body: JSON.stringify({ email }),
       })
       if (!res.ok) throw new Error()
-      const data = await res.json()
-      if (typeof data.remaining === 'number') {
-        onSubscribed?.(data.remaining)
-      }
       setStatus('success')
+      onSubscribed?.()
     } catch {
       setStatus('error')
     }

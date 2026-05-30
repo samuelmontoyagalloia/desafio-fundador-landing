@@ -1,7 +1,38 @@
-import { kv } from '@vercel/kv'
+import { get } from '@vercel/edge-config'
 
-const TOTAL_FREE_SPOTS = 5
 const KIT_FORM_URL = 'https://app.kit.com/forms/9504110/subscriptions'
+
+function getEdgeConfigId() {
+  // EDGE_CONFIG format: https://edge-config.vercel.com/ecfg_xxx?token=yyy
+  return new URL(process.env.EDGE_CONFIG).pathname.replace('/', '')
+}
+
+async function incrementWaitlistCount() {
+  const current = (await get('waitlist_count')) ?? 0
+  const next = current + 1
+
+  const edgeConfigId = getEdgeConfigId()
+  const res = await fetch(
+    `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${process.env.VERCEL_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: [{ operation: 'upsert', key: 'waitlist_count', value: next }],
+      }),
+    }
+  )
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    throw new Error(`Edge Config PATCH ${res.status}: ${detail}`)
+  }
+
+  console.log('[subscribe] waitlist_count after increment:', next)
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -29,21 +60,18 @@ export default async function handler(req, res) {
   }
 
   if (!kitRes.ok) {
-    let detail = ''
-    try { detail = await kitRes.text() } catch {}
+    const detail = await kitRes.text().catch(() => '')
     console.error(`[subscribe] Kit returned ${kitRes.status}:`, detail)
     return res.status(502).json({ error: 'Kit subscription failed', status: kitRes.status })
   }
 
-  // 2. Increment KV counter and return new remaining count
+  // 2. Increment Edge Config counter
   try {
-    const newCount = await kv.incr('waitlist_count')
-    console.log('[subscribe] waitlist_count after incr:', newCount)
-    const remaining = Math.max(0, TOTAL_FREE_SPOTS - newCount)
-    return res.status(200).json({ remaining })
+    await incrementWaitlistCount()
   } catch (err) {
-    console.error('[subscribe] KV incr error:', err)
-    // Kit subscription succeeded — still report success to the user
-    return res.status(200).json({ remaining: null })
+    console.error('[subscribe] Edge Config increment error:', err)
+    // Kit succeeded — still report success; counter update is best-effort
   }
+
+  return res.status(200).json({ ok: true })
 }

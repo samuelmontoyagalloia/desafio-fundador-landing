@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 const TOTAL_FREE_SPOTS = 5
 
 export function useSubscriberCount() {
   const [remaining, setRemaining] = useState(TOTAL_FREE_SPOTS)
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     fetch('/api/subscribers')
       .then(res => res.json())
       .then(data => {
@@ -16,5 +16,7 @@ export function useSubscriberCount() {
       .catch(() => {})
   }, [])
 
-  return [remaining, setRemaining]
+  useEffect(() => { refresh() }, [refresh])
+
+  return [remaining, refresh]
 }
