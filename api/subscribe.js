@@ -14,6 +14,11 @@ async function subscribeToKit(email) {
     throw Object.assign(new Error('CONVERTKIT_API_SECRET is not set'), { code: 'NO_SECRET' })
   }
 
+  const requestBody = JSON.stringify({ api_key: apiKey, email_address: email })
+  console.log('[subscribe] API key prefix:', apiKey.slice(0, 4))
+  console.log('[subscribe] URL:', KIT_API_URL)
+  console.log('[subscribe] Request body:', requestBody)
+
   let res
   try {
     res = await fetch(KIT_API_URL, {
@@ -22,7 +27,7 @@ async function subscribeToKit(email) {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: JSON.stringify({ api_key: apiKey, email_address: email }),
+      body: requestBody,
     })
   } catch (networkErr) {
     throw Object.assign(
@@ -37,7 +42,7 @@ async function subscribeToKit(email) {
   try { kitBody = JSON.parse(rawText) } catch {}
 
   console.log(`[subscribe] Kit ${KIT_FORM_ID} → status ${res.status}`)
-  console.log('[subscribe] Kit raw response:', rawText.slice(0, 500))
+  console.log('[subscribe] Kit full response body:', rawText)
 
   if (!res.ok) {
     const message = kitBody?.message ?? kitBody?.error ?? rawText.slice(0, 200) ?? 'no body'
