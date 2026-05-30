@@ -16,5 +16,5 @@ export function useSubscriberCount() {
       .catch(() => {})
   }, [])
 
-  return remaining
+  return [remaining, setRemaining]
 }

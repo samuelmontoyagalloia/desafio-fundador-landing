@@ -1,8 +1,6 @@
 import { useState } from 'react'
 
-const KIT_FORM_URL = 'https://app.kit.com/forms/9504110/subscriptions'
-
-export default function WaitlistForm() {
+export default function WaitlistForm({ onSubscribed }) {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState('idle') // idle | loading | success | error
 
@@ -10,14 +8,16 @@ export default function WaitlistForm() {
     e.preventDefault()
     setStatus('loading')
     try {
-      const body = new FormData()
-      body.append('email_address', email)
-      const res = await fetch(KIT_FORM_URL, {
+      const res = await fetch('/api/subscribe', {
         method: 'POST',
-        body,
-        headers: { Accept: 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       })
       if (!res.ok) throw new Error()
+      const data = await res.json()
+      if (typeof data.remaining === 'number') {
+        onSubscribed?.(data.remaining)
+      }
       setStatus('success')
     } catch {
       setStatus('error')
