@@ -9,10 +9,12 @@ export default async function handler(req, res) {
 
   let kitRes
   try {
-    kitRes = await fetch(
-      `https://api.convertkit.com/v3/account?api_key=${apiKey}`,
-      { headers: { Accept: 'application/json' } }
-    )
+    kitRes = await fetch('https://api.kit.com/v4/account', {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'X-Kit-Api-Version': '2025-01-01',
+      },
+    })
   } catch (err) {
     return res.status(502).json({ error: 'Network error', detail: err.message })
   }

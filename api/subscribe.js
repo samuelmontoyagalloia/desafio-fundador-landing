@@ -1,7 +1,7 @@
 import { get } from '@vercel/edge-config'
 
 const KIT_FORM_ID = '9504110'
-const KIT_API_URL = `https://api.convertkit.com/v3/forms/${KIT_FORM_ID}/subscribe`
+const KIT_API_URL = `https://api.kit.com/v4/forms/${KIT_FORM_ID}/subscribers`
 
 function getEdgeConfigId() {
   // EDGE_CONFIG format: https://edge-config.vercel.com/ecfg_xxx?token=yyy
@@ -14,7 +14,7 @@ async function subscribeToKit(email) {
     throw Object.assign(new Error('CONVERTKIT_API_SECRET is not set'), { code: 'NO_SECRET' })
   }
 
-  const requestBody = JSON.stringify({ api_key: apiKey, email_address: email })
+  const requestBody = JSON.stringify({ email_address: email })
   console.log('[subscribe] API key prefix:', apiKey.slice(0, 4))
   console.log('[subscribe] URL:', KIT_API_URL)
   console.log('[subscribe] Request body:', requestBody)
@@ -24,8 +24,9 @@ async function subscribeToKit(email) {
     res = await fetch(KIT_API_URL, {
       method: 'POST',
       headers: {
+        Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        Accept: 'application/json',
+        'X-Kit-Api-Version': '2025-01-01',
       },
       body: requestBody,
     })
