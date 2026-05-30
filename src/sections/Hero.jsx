@@ -1,6 +1,6 @@
 import Eyebrow from '../components/Eyebrow'
 
-export default function Hero() {
+export default function Hero({ remaining }) {
   return (
     <header className="bg-paper relative overflow-hidden">
       <div className="absolute w-[820px] h-[820px] bg-hero-glow -top-40 -left-56 pointer-events-none" />
@@ -28,7 +28,11 @@ export default function Hero() {
               <span className="w-[9px] h-[9px] rounded-full bg-electric flex-none mt-[7px] animate-pulse-ring" />
               <div className="flex flex-col gap-[3px]">
                 <span className="font-display font-bold text-[20px] tracking-[-0.01em] text-ink leading-[1.1]">
-                  Quedan <span className="text-electric">3</span> de 5
+                  Quedan{' '}
+                  <span className="text-electric">
+                    {remaining !== null ? remaining : '—'}
+                  </span>{' '}
+                  de 5
                 </span>
                 <span className="font-body text-[13px] leading-[1.5] text-stone">
                   cupos gratuitos. Reserva el tuyo antes de que abran.

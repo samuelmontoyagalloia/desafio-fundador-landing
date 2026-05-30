@@ -1,6 +1,6 @@
 import WaitlistForm from '../components/WaitlistForm'
 
-export default function Formulario() {
+export default function Formulario({ remaining }) {
   return (
     <section id="reservar" className="bg-electric text-cream py-14 md:py-[88px] relative overflow-hidden">
       <div className="absolute w-[700px] h-[700px] bg-form-glow -top-[200px] -right-[160px] pointer-events-none" />
@@ -14,7 +14,11 @@ export default function Formulario() {
             Los primeros 5 cupos son gratis.
           </h2>
           <p className="font-display font-light text-[19px] leading-[1.55] tracking-[-0.005em] text-cream/85 mt-[18px] m-0">
-            Quedan <strong className="font-bold text-cream">3 de 5</strong> lugares gratuitos. Después, el precio sube.
+            Quedan{' '}
+            <strong className="font-bold text-cream">
+              {remaining !== null ? remaining : '—'} de 5
+            </strong>{' '}
+            lugares gratuitos. Después, el precio sube.
           </p>
           <div className="mt-[34px]">
             <WaitlistForm />
