@@ -1,7 +1,6 @@
 import { get } from '@vercel/edge-config'
 
-const KIT_FORM_ID = '9504110'
-const KIT_API_URL = `https://api.kit.com/v4/forms/${KIT_FORM_ID}/subscribers`
+const KIT_FORM_URL = 'https://app.kit.com/forms/9504110/subscriptions'
 
 function getEdgeConfigId() {
   // EDGE_CONFIG format: https://edge-config.vercel.com/ecfg_xxx?token=yyy
@@ -9,24 +8,17 @@ function getEdgeConfigId() {
 }
 
 async function subscribeToKit(email) {
-  const apiKey = process.env.CONVERTKIT_API_SECRET
-  if (!apiKey) {
-    throw Object.assign(new Error('CONVERTKIT_API_SECRET is not set'), { code: 'NO_SECRET' })
-  }
-
-  const requestBody = JSON.stringify({ email_address: email })
-  console.log('[subscribe] API key prefix:', apiKey.slice(0, 4))
-  console.log('[subscribe] URL:', KIT_API_URL)
+  const requestBody = new URLSearchParams({ email_address: email }).toString()
+  console.log('[subscribe] URL:', KIT_FORM_URL)
   console.log('[subscribe] Request body:', requestBody)
 
   let res
   try {
-    res = await fetch(KIT_API_URL, {
+    res = await fetch(KIT_FORM_URL, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'X-Kit-Api-Version': '2025-01-01',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
       },
       body: requestBody,
     })
@@ -37,27 +29,18 @@ async function subscribeToKit(email) {
     )
   }
 
-  // Always read the raw body first so we can log it regardless of content-type
   const rawText = await res.text().catch(() => '')
   let kitBody = null
   try { kitBody = JSON.parse(rawText) } catch {}
 
-  console.log(`[subscribe] Kit ${KIT_FORM_ID} → status ${res.status}`)
+  console.log(`[subscribe] Kit → status ${res.status}`)
   console.log('[subscribe] Kit full response body:', rawText)
 
-  if (!res.ok) {
+  if (res.status !== 200 && res.status !== 201) {
     const message = kitBody?.message ?? kitBody?.error ?? rawText.slice(0, 200) ?? 'no body'
     throw Object.assign(
       new Error(`Kit returned ${res.status}: ${message}`),
       { code: 'KIT_ERROR', kitStatus: res.status, kitMessage: message }
-    )
-  }
-
-  // Kit can return 200 with an error field
-  if (kitBody?.error) {
-    throw Object.assign(
-      new Error(`Kit error: ${kitBody.message ?? kitBody.error}`),
-      { code: 'KIT_ERROR', kitStatus: res.status, kitMessage: kitBody.message ?? kitBody.error }
     )
   }
 
@@ -92,7 +75,6 @@ async function incrementWaitlistCount() {
 }
 
 export default async function handler(req, res) {
-  // Top-level safety net — ensures we never return a bare Vercel 503
   try {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' })
@@ -120,7 +102,6 @@ export default async function handler(req, res) {
     try {
       await incrementWaitlistCount()
     } catch (err) {
-      // Counter is best-effort; Kit already confirmed the subscription
       console.error('[subscribe] Edge Config increment failed:', err.message)
     }
 
