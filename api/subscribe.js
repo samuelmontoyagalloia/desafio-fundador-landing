@@ -9,9 +9,9 @@ function getEdgeConfigId() {
 }
 
 async function subscribeToKit(email) {
-  const apiKey = process.env.CONVERTKIT_API_KEY
+  const apiKey = process.env.CONVERTKIT_API_SECRET
   if (!apiKey) {
-    throw Object.assign(new Error('CONVERTKIT_API_KEY is not set'), { code: 'NO_SECRET' })
+    throw Object.assign(new Error('CONVERTKIT_API_SECRET is not set'), { code: 'NO_SECRET' })
   }
 
   let res
