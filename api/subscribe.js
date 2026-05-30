@@ -9,9 +9,9 @@ function getEdgeConfigId() {
 }
 
 async function subscribeToKit(email) {
-  const apiSecret = process.env.CONVERTKIT_API_SECRET
-  if (!apiSecret) {
-    throw Object.assign(new Error('CONVERTKIT_API_SECRET is not set'), { code: 'NO_SECRET' })
+  const apiKey = process.env.CONVERTKIT_API_KEY
+  if (!apiKey) {
+    throw Object.assign(new Error('CONVERTKIT_API_KEY is not set'), { code: 'NO_SECRET' })
   }
 
   let res
@@ -19,10 +19,10 @@ async function subscribeToKit(email) {
     res = await fetch(KIT_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
         Accept: 'application/json',
       },
-      body: new URLSearchParams({ api_secret: apiSecret, email_address: email }).toString(),
+      body: JSON.stringify({ api_key: apiKey, email_address: email }),
     })
   } catch (networkErr) {
     throw Object.assign(
