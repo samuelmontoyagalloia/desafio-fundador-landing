@@ -3,20 +3,34 @@ import { useState } from 'react'
 export default function WaitlistForm({ onSubscribed }) {
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState('idle') // idle | loading | success | error
+  const [errorDetail, setErrorDetail] = useState('')
 
   async function handleSubmit(e) {
     e.preventDefault()
     setStatus('loading')
+    setErrorDetail('')
     try {
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      if (!res.ok) throw new Error()
+
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        const detail = data.detail ?? data.error ?? `Error ${res.status}`
+        console.error('[form] /api/subscribe error:', data)
+        setErrorDetail(detail)
+        setStatus('error')
+        return
+      }
+
       setStatus('success')
       onSubscribed?.()
-    } catch {
+    } catch (err) {
+      console.error('[form] Network error:', err)
+      setErrorDetail('No se pudo conectar. Revisa tu conexión.')
       setStatus('error')
     }
   }
@@ -48,7 +62,7 @@ export default function WaitlistForm({ onSubscribed }) {
       </button>
       {status === 'error' && (
         <p className="w-full font-body text-[13px] text-cream/80 mt-1">
-          Algo salió mal. Intenta de nuevo.
+          {errorDetail || 'Algo salió mal. Intenta de nuevo.'}
         </p>
       )}
     </form>

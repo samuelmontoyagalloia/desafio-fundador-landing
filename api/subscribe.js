@@ -11,29 +11,51 @@ function getEdgeConfigId() {
 async function subscribeToKit(email) {
   const apiSecret = process.env.CONVERTKIT_API_SECRET
   if (!apiSecret) {
-    throw new Error('CONVERTKIT_API_SECRET is not defined')
+    throw Object.assign(new Error('CONVERTKIT_API_SECRET is not set'), { code: 'NO_SECRET' })
   }
 
-  const res = await fetch(KIT_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({ api_secret: apiSecret, email_address: email }),
-  })
-
-  const body = await res.json().catch(() => null)
-  console.log(`[subscribe] Kit status: ${res.status}`)
-  console.log('[subscribe] Kit body:', JSON.stringify(body))
-
-  if (!res.ok || body?.error) {
-    throw new Error(
-      `Kit error ${res.status}: ${body?.message ?? body?.error ?? 'unknown'}`
+  let res
+  try {
+    res = await fetch(KIT_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+      },
+      body: new URLSearchParams({ api_secret: apiSecret, email_address: email }).toString(),
+    })
+  } catch (networkErr) {
+    throw Object.assign(
+      new Error(`Network error reaching Kit: ${networkErr.message}`),
+      { code: 'KIT_NETWORK' }
     )
   }
 
-  return body
+  // Always read the raw body first so we can log it regardless of content-type
+  const rawText = await res.text().catch(() => '')
+  let kitBody = null
+  try { kitBody = JSON.parse(rawText) } catch {}
+
+  console.log(`[subscribe] Kit ${KIT_FORM_ID} → status ${res.status}`)
+  console.log('[subscribe] Kit raw response:', rawText.slice(0, 500))
+
+  if (!res.ok) {
+    const message = kitBody?.message ?? kitBody?.error ?? rawText.slice(0, 200) ?? 'no body'
+    throw Object.assign(
+      new Error(`Kit returned ${res.status}: ${message}`),
+      { code: 'KIT_ERROR', kitStatus: res.status, kitMessage: message }
+    )
+  }
+
+  // Kit can return 200 with an error field
+  if (kitBody?.error) {
+    throw Object.assign(
+      new Error(`Kit error: ${kitBody.message ?? kitBody.error}`),
+      { code: 'KIT_ERROR', kitStatus: res.status, kitMessage: kitBody.message ?? kitBody.error }
+    )
+  }
+
+  return kitBody
 }
 
 async function incrementWaitlistCount() {
@@ -64,30 +86,44 @@ async function incrementWaitlistCount() {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
-
-  const { email } = req.body ?? {}
-  if (!email) {
-    return res.status(400).json({ error: 'Missing email' })
-  }
-
-  // 1. Subscribe to Kit — must succeed before touching Edge Config
+  // Top-level safety net — ensures we never return a bare Vercel 503
   try {
-    await subscribeToKit(email)
-  } catch (err) {
-    console.error('[subscribe] Kit subscription failed:', err.message)
-    return res.status(502).json({ error: 'Kit subscription failed' })
-  }
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method not allowed' })
+    }
 
-  // 2. Kit confirmed — now increment the counter
-  try {
-    await incrementWaitlistCount()
-  } catch (err) {
-    console.error('[subscribe] Edge Config increment error:', err.message)
-    // Counter update is best-effort; Kit subscription already succeeded
-  }
+    const { email } = req.body ?? {}
+    if (!email) {
+      return res.status(400).json({ error: 'Missing email' })
+    }
 
-  return res.status(200).json({ ok: true })
+    // 1. Subscribe to Kit — must succeed before touching Edge Config
+    try {
+      await subscribeToKit(email)
+    } catch (err) {
+      console.error('[subscribe] Kit failed:', err.message)
+      return res.status(502).json({
+        error: 'Kit subscription failed',
+        detail: err.kitMessage ?? err.message,
+        kitStatus: err.kitStatus ?? null,
+        code: err.code ?? 'UNKNOWN',
+      })
+    }
+
+    // 2. Kit confirmed — now increment the counter
+    try {
+      await incrementWaitlistCount()
+    } catch (err) {
+      // Counter is best-effort; Kit already confirmed the subscription
+      console.error('[subscribe] Edge Config increment failed:', err.message)
+    }
+
+    return res.status(200).json({ ok: true })
+  } catch (unexpected) {
+    console.error('[subscribe] Unexpected error:', unexpected)
+    return res.status(500).json({
+      error: 'Internal server error',
+      detail: unexpected?.message ?? 'unknown',
+    })
+  }
 }
