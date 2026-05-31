@@ -1,117 +1,105 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
+
+const KIT_CSS = `
+  /* ── Kill modal / overlay ── */
+  .formkit-overlay,
+  .formkit-slide-in,
+  body > .formkit-form[data-format="modal"],
+  body > .formkit-form[data-format="slide in"] {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
+  /* ── Hide powered-by watermark ── */
+  .formkit-powered-by-convertkit-container,
+  .formkit-powered-by-convertkit,
+  a[class*="powered-by"] {
+    display: none !important;
+  }
+`
 
 export default function WaitlistForm({ onSubscribed }) {
-  const [email, setEmail] = useState('')
-  const [status, setStatus] = useState('idle')
-  const kitRef = useRef(null)
+  const ref = useRef(null)
+  const lastEmail = useRef('')
+  const counted = useRef(false)
 
   useEffect(() => {
-    if (!kitRef.current) return
+    if (!ref.current) return
 
+    // Inject overrides before Kit renders
+    const style = document.createElement('style')
+    style.textContent = KIT_CSS
+    document.head.appendChild(style)
+
+    // Load Kit embed inside our container
     const script = document.createElement('script')
     script.src = 'https://samuelmontoya.kit.com/2ee48b4cf7/index.js'
     script.setAttribute('data-uid', '2ee48b4cf7')
     script.async = true
-    kitRef.current.appendChild(script)
+    ref.current.appendChild(script)
 
-    // Auto-close any Kit modal/overlay that appears in the body
-    const observer = new MutationObserver(() => {
-      for (const selector of ['.formkit-overlay', '.formkit-modal', '[data-formkit-modal]']) {
-        const el = document.querySelector(selector)
-        if (el) {
-          const closeBtn = el.querySelector('[data-close], .formkit-close, button[type="button"]')
-          if (closeBtn) closeBtn.click()
-          else el.remove()
+    function patchKit() {
+      if (!ref.current) return
+
+      // ── Patch button text ──
+      const btn = ref.current.querySelector('button[data-element="submit"], button[type="submit"]')
+      if (btn) {
+        const label = btn.querySelector('span:not([class*="spinner"])')
+        const target = label ?? btn
+        if (target.textContent.trim() !== 'Quiero mi lugar →') {
+          target.textContent = 'Quiero mi lugar →'
         }
       }
-    })
-    observer.observe(document.body, { childList: true, subtree: true })
 
-    return () => observer.disconnect()
-  }, [])
+      // ── Hide any remaining branding nodes ──
+      ref.current
+        .querySelectorAll('[class*="powered-by"], a[href*="kit.com"][class*="powered"]')
+        .forEach(el => { el.style.display = 'none' })
 
-  function submitToKit(emailValue) {
-    return new Promise(resolve => {
-      const container = kitRef.current
-      if (!container) return resolve()
+      // ── Capture email on submit ──
+      const form = ref.current.querySelector('form')
+      if (form && !form._patched) {
+        form._patched = true
+        form.addEventListener('submit', () => {
+          const input = form.querySelector('input[type="email"]')
+          if (input) lastEmail.current = input.value
+          counted.current = false
+        })
+      }
 
-      const kitInput = container.querySelector('input[type="email"]')
-      const kitSubmit = container.querySelector('button[type="submit"], input[type="submit"]')
-
-      if (!kitInput || !kitSubmit) return resolve()
-
-      // Native setter needed for React-controlled Kit inputs
-      const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
-      nativeSetter.call(kitInput, emailValue)
-      kitInput.dispatchEvent(new Event('input', { bubbles: true }))
-      kitInput.dispatchEvent(new Event('change', { bubbles: true }))
-
-      kitSubmit.click()
-
-      setTimeout(resolve, 1500)
-    })
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    if (status === 'loading') return
-    setStatus('loading')
-
-    try {
-      await submitToKit(email)
-
-      await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      }).catch(() => {})
-
-      setStatus('success')
-      onSubscribed?.()
-    } catch {
-      setStatus('error')
+      // ── Detect Kit success state → update counter ──
+      const success = ref.current.querySelector('[data-element="success"], .formkit-alert-success')
+      if (success && !counted.current) {
+        counted.current = true
+        fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: lastEmail.current }),
+        }).catch(() => {})
+        onSubscribed?.()
+      }
     }
-  }
 
-  if (status === 'success') {
-    return (
-      <p className="font-display font-semibold text-[18px] tracking-[-0.01em] text-cream">
-        ¡Tu lugar está reservado! Te avisamos cuando abramos.
-      </p>
-    )
-  }
+    // Watch our container for Kit rendering mutations
+    const localObserver = new MutationObserver(patchKit)
+    localObserver.observe(ref.current, { childList: true, subtree: true })
 
-  return (
-    <>
-      {/* Kit embed off-screen — handles actual subscription */}
-      <div
-        ref={kitRef}
-        aria-hidden="true"
-        style={{ position: 'fixed', left: '-9999px', top: 0, width: '320px', opacity: 0, pointerEvents: 'none' }}
-      />
+    // Watch body to nuke any Kit-appended modal nodes immediately
+    const bodyObserver = new MutationObserver(() => {
+      document
+        .querySelectorAll(
+          '.formkit-overlay, body > .formkit-form[data-format="modal"], body > .formkit-form[data-format="slide in"]'
+        )
+        .forEach(el => el.remove())
+    })
+    bodyObserver.observe(document.body, { childList: true })
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder="Tu email"
-          className="w-full font-body text-[15px] text-ink placeholder:text-stone/60 bg-cream rounded-[6px] px-4 py-[14px] border-none outline-none focus:ring-2 focus:ring-cream/40"
-        />
-        <button
-          type="submit"
-          disabled={status === 'loading'}
-          className="w-full inline-flex items-center justify-center gap-[8px] font-display font-bold text-[12px] tracking-[0.12em] uppercase py-[14px] px-6 bg-ink text-cream rounded-[6px] transition-colors duration-[160ms] hover:bg-electric-deep disabled:opacity-60 whitespace-nowrap"
-        >
-          {status === 'loading' ? 'Enviando…' : 'Quiero mi lugar →'}
-        </button>
-        {status === 'error' && (
-          <p className="w-full font-body text-[13px] text-cream/80 mt-1">
-            Algo salió mal. Intenta de nuevo.
-          </p>
-        )}
-      </form>
-    </>
-  )
+    return () => {
+      localObserver.disconnect()
+      bodyObserver.disconnect()
+      if (document.head.contains(style)) document.head.removeChild(style)
+    }
+  }, [onSubscribed])
+
+  return <div ref={ref} />
 }
