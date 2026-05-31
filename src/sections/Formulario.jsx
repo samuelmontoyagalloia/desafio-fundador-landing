@@ -1,6 +1,6 @@
 import WaitlistForm from '../components/WaitlistForm'
 
-export default function Formulario({ remaining, onSubscribed }) {
+export default function Formulario({ remaining }) {
   return (
     <section id="reservar" className="bg-electric text-cream py-14 md:py-[88px] relative overflow-hidden">
       <div className="absolute w-[700px] h-[700px] bg-form-glow -top-[200px] -right-[160px] pointer-events-none" />
@@ -21,7 +21,7 @@ export default function Formulario({ remaining, onSubscribed }) {
             lugares gratuitos. Después, el precio sube.
           </p>
           <div className="mt-[34px]">
-            <WaitlistForm onSubscribed={onSubscribed} />
+            <WaitlistForm />
           </div>
         </div>
       </div>
