@@ -18,13 +18,11 @@ const KIT_CSS = `
 export default function WaitlistForm({ onSubscribed }) {
   const [succeeded, setSucceeded] = useState(false)
   const ref = useRef(null)
-  const lastEmail = useRef('')
   const counted = useRef(false)
 
   useEffect(() => {
     if (!ref.current) return
 
-    // ── Intercept window.fetch to catch Kit's subscription response ──
     const origFetch = window.fetch
     window.fetch = async function (...args) {
       const response = await origFetch.apply(this, args)
@@ -35,11 +33,7 @@ export default function WaitlistForm({ onSubscribed }) {
             if (data?.status === 'success' && !counted.current) {
               counted.current = true
               setSucceeded(true)
-              fetch('/api/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: lastEmail.current }),
-              })
+              origFetch('/api/subscribe', { method: 'POST' })
                 .then(() => onSubscribed?.())
                 .catch(() => onSubscribed?.())
             }
@@ -49,22 +43,18 @@ export default function WaitlistForm({ onSubscribed }) {
       return response
     }
 
-    // ── CSS overrides ──
     const style = document.createElement('style')
     style.textContent = KIT_CSS
     document.head.appendChild(style)
 
-    // ── Load Kit embed ──
     const script = document.createElement('script')
     script.src = 'https://samuelmontoya.kit.com/2ee48b4cf7/index.js'
     script.setAttribute('data-uid', '2ee48b4cf7')
     script.async = true
     ref.current.appendChild(script)
 
-    // ── Patch Kit DOM once it renders ──
-    function patchKit() {
+    const localObserver = new MutationObserver(() => {
       if (!ref.current) return
-
       const btn = ref.current.querySelector('button[data-element="submit"], button[type="submit"]')
       if (btn) {
         const label = btn.querySelector('span:not([class*="spinner"])')
@@ -73,30 +63,15 @@ export default function WaitlistForm({ onSubscribed }) {
           target.textContent = 'Quiero mi lugar →'
         }
       }
-
       ref.current
         .querySelectorAll('[class*="powered-by"], a[href*="kit.com"][class*="powered"]')
         .forEach(el => { el.style.display = 'none' })
-
-      // Capture email when Kit's form is submitted
-      const form = ref.current.querySelector('form')
-      if (form && !form._patched) {
-        form._patched = true
-        form.addEventListener('submit', () => {
-          const input = form.querySelector('input[type="email"]')
-          if (input) lastEmail.current = input.value
-        })
-      }
-    }
-
-    const localObserver = new MutationObserver(patchKit)
+    })
     localObserver.observe(ref.current, { childList: true, subtree: true })
 
     const bodyObserver = new MutationObserver(() => {
       document
-        .querySelectorAll(
-          '.formkit-overlay, body > .formkit-form[data-format="modal"], body > .formkit-form[data-format="slide in"]'
-        )
+        .querySelectorAll('.formkit-overlay, body > .formkit-form[data-format="modal"]')
         .forEach(el => el.remove())
     })
     bodyObserver.observe(document.body, { childList: true })
