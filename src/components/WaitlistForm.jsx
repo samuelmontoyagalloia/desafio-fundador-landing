@@ -33,25 +33,30 @@ const KIT_CSS = `
     font-size: 12px !important;
     letter-spacing: 0.12em !important;
     text-transform: uppercase !important;
-    padding: 16px 28px !important;
+    padding: 0 !important;
     border-radius: 12px !important;
     border: none !important;
     transition: background-color 160ms !important;
     cursor: pointer !important;
     width: 100% !important;
+    margin-bottom: 0 !important;
   }
   .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit:hover {
     background-color: #2a2929 !important;
   }
-  .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit span {
+  .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit > span {
+    display: block !important;
+    padding: 16px 28px !important;
     color: #FDFCFA !important;
   }
 `
 
 const ERROR_MSG = 'En este momento no pudimos registrarte, intenta más tarde'
 
+const LS_KEY = 'wl_submitted'
+
 export default function WaitlistForm({ onSubscribed }) {
-  const [succeeded, setSucceeded] = useState(false)
+  const [succeeded, setSucceeded] = useState(() => !!localStorage.getItem(LS_KEY))
   const ref = useRef(null)
   const counted = useRef(false)
 
@@ -67,6 +72,7 @@ export default function WaitlistForm({ onSubscribed }) {
           response.clone().json().then(data => {
             if (data?.status === 'success' && !counted.current) {
               counted.current = true
+              localStorage.setItem(LS_KEY, '1')
               setSucceeded(true)
               origFetch('/api/subscribe', { method: 'POST' })
                 .then(r => r.json())
