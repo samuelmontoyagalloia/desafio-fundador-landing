@@ -26,7 +26,7 @@ const KIT_CSS = `
     color: #ffffff !important;
   }
   .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit {
-    background-color: #0066FF !important;
+    background-color: #111010 !important;
     color: #FDFCFA !important;
     font-family: "Bricolage Grotesque", system-ui, sans-serif !important;
     font-weight: 700 !important;
@@ -34,14 +34,14 @@ const KIT_CSS = `
     letter-spacing: 0.12em !important;
     text-transform: uppercase !important;
     padding: 16px 28px !important;
-    border-radius: 6px !important;
+    border-radius: 12px !important;
     border: none !important;
     transition: background-color 160ms !important;
     cursor: pointer !important;
     width: 100% !important;
   }
   .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit:hover {
-    background-color: #0052CC !important;
+    background-color: #2a2929 !important;
   }
   .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit span {
     color: #FDFCFA !important;
