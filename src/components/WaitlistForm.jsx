@@ -18,6 +18,12 @@ const KIT_CSS = `
   }
 `
 
+function isVisible(el) {
+  if (!el) return false
+  const s = getComputedStyle(el)
+  return s.display !== 'none' && s.visibility !== 'hidden' && s.opacity !== '0'
+}
+
 export default function WaitlistForm({ onSubscribed }) {
   const [succeeded, setSucceeded] = useState(false)
   const ref = useRef(null)
@@ -27,22 +33,39 @@ export default function WaitlistForm({ onSubscribed }) {
   useEffect(() => {
     if (!ref.current) return
 
-    // Inject overrides before Kit renders
     const style = document.createElement('style')
     style.textContent = KIT_CSS
     document.head.appendChild(style)
 
-    // Load Kit embed inside our container
     const script = document.createElement('script')
     script.src = 'https://samuelmontoya.kit.com/2ee48b4cf7/index.js'
     script.setAttribute('data-uid', '2ee48b4cf7')
     script.async = true
     ref.current.appendChild(script)
 
+    function handleSuccess() {
+      if (counted.current) return
+      counted.current = true
+      setSucceeded(true)
+      fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: lastEmail.current }),
+      })
+        .then(() => onSubscribed?.())
+        .catch(() => onSubscribed?.())
+    }
+
+    function checkSuccess() {
+      if (!ref.current || counted.current) return
+      const successEl = ref.current.querySelector('[data-element="success"], .formkit-alert-success')
+      if (successEl && isVisible(successEl)) handleSuccess()
+    }
+
     function patchKit() {
       if (!ref.current) return
 
-      // ── Patch button text ──
+      // Patch button text
       const btn = ref.current.querySelector('button[data-element="submit"], button[type="submit"]')
       if (btn) {
         const label = btn.querySelector('span:not([class*="spinner"])')
@@ -52,12 +75,12 @@ export default function WaitlistForm({ onSubscribed }) {
         }
       }
 
-      // ── Hide any remaining branding nodes ──
+      // Hide branding
       ref.current
         .querySelectorAll('[class*="powered-by"], a[href*="kit.com"][class*="powered"]')
         .forEach(el => { el.style.display = 'none' })
 
-      // ── Capture email on submit ──
+      // Hook form submit to capture email + start polling
       const form = ref.current.querySelector('form')
       if (form && !form._patched) {
         form._patched = true
@@ -65,29 +88,30 @@ export default function WaitlistForm({ onSubscribed }) {
           const input = form.querySelector('input[type="email"]')
           if (input) lastEmail.current = input.value
           counted.current = false
+
+          // Poll for success every 300 ms for up to 10 s
+          let attempts = 0
+          const poll = setInterval(() => {
+            attempts++
+            checkSuccess()
+            if (counted.current || attempts > 33) clearInterval(poll)
+          }, 300)
         })
       }
 
-      // ── Detect Kit success state → hide form, show custom message, update counter ──
-      const success = ref.current.querySelector('[data-element="success"], .formkit-alert-success')
-      if (success && !counted.current) {
-        counted.current = true
-        setSucceeded(true)
-        fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: lastEmail.current }),
-        })
-          .then(() => onSubscribed?.())
-          .catch(() => onSubscribed?.())
-      }
+      checkSuccess()
     }
 
-    // Watch our container for Kit rendering mutations
+    // Watch childList AND attribute changes (Kit reveals success by toggling display/style)
     const localObserver = new MutationObserver(patchKit)
-    localObserver.observe(ref.current, { childList: true, subtree: true })
+    localObserver.observe(ref.current, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class', 'aria-hidden'],
+    })
 
-    // Watch body to nuke any Kit-appended modal nodes immediately
+    // Remove any Kit modal appended to body
     const bodyObserver = new MutationObserver(() => {
       document
         .querySelectorAll(
