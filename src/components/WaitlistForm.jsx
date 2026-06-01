@@ -13,7 +13,42 @@ const KIT_CSS = `
   a[class*="powered-by"] {
     display: none !important;
   }
+  .formkit-form[data-uid="2ee48b4cf7"] .formkit-alert-error {
+    background: #B91C1C !important;
+    border-color: #991B1B !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    font-family: "DM Sans", system-ui, sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+  }
+  .formkit-form[data-uid="2ee48b4cf7"] .formkit-alert-error li {
+    color: #ffffff !important;
+  }
+  .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit {
+    background-color: #0066FF !important;
+    color: #FDFCFA !important;
+    font-family: "Bricolage Grotesque", system-ui, sans-serif !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    letter-spacing: 0.12em !important;
+    text-transform: uppercase !important;
+    padding: 16px 28px !important;
+    border-radius: 6px !important;
+    border: none !important;
+    transition: background-color 160ms !important;
+    cursor: pointer !important;
+    width: 100% !important;
+  }
+  .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit:hover {
+    background-color: #0052CC !important;
+  }
+  .formkit-form[data-uid="2ee48b4cf7"] .formkit-submit span {
+    color: #FDFCFA !important;
+  }
 `
+
+const ERROR_MSG = 'En este momento no pudimos registrarte, intenta más tarde'
 
 export default function WaitlistForm({ onSubscribed }) {
   const [succeeded, setSucceeded] = useState(false)
@@ -67,6 +102,12 @@ export default function WaitlistForm({ onSubscribed }) {
       ref.current
         .querySelectorAll('[class*="powered-by"], a[href*="kit.com"][class*="powered"]')
         .forEach(el => { el.style.display = 'none' })
+      const errorAlert = ref.current.querySelector('.formkit-alert-error')
+      if (errorAlert) {
+        Array.from(errorAlert.children).forEach(li => {
+          if (li.textContent.trim() !== ERROR_MSG) li.textContent = ERROR_MSG
+        })
+      }
     })
     localObserver.observe(ref.current, { childList: true, subtree: true })
 
