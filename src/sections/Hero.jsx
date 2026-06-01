@@ -24,21 +24,23 @@ export default function Hero({ remaining }) {
               Quiero mi lugar{' '}
               <span className="text-[14px] transition-transform duration-[160ms] group-hover:translate-x-[3px]">→</span>
             </a>
-            <div className="flex items-start gap-[11px]">
-              <span className="w-[9px] h-[9px] rounded-full bg-electric flex-none mt-[7px] animate-pulse-ring" />
-              <div className="flex flex-col gap-[3px]">
-                <span className="font-display font-bold text-[20px] tracking-[-0.01em] text-ink leading-[1.1]">
-                  Quedan{' '}
-                  <span className="text-electric">
-                    {remaining !== null ? remaining : '—'}
-                  </span>{' '}
-                  de 5
-                </span>
-                <span className="font-body text-[13px] leading-[1.5] text-stone">
-                  cupos gratuitos. Reserva el tuyo antes de que abran.
-                </span>
+            {remaining !== 0 && (
+              <div className="flex items-start gap-[11px]">
+                <span className="w-[9px] h-[9px] rounded-full bg-electric flex-none mt-[7px] animate-pulse-ring" />
+                <div className="flex flex-col gap-[3px]">
+                  <span className="font-display font-bold text-[20px] tracking-[-0.01em] text-ink leading-[1.1]">
+                    Quedan{' '}
+                    <span className="text-electric">
+                      {remaining !== null ? remaining : '—'}
+                    </span>{' '}
+                    de 5
+                  </span>
+                  <span className="font-body text-[13px] leading-[1.5] text-stone">
+                    cupos gratuitos. Reserva el tuyo antes de que abran.
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

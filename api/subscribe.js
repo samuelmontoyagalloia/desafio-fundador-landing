@@ -7,8 +7,14 @@ function getEdgeConfigId() {
 }
 
 async function incrementWaitlistCount() {
-  const current = (await get('waitlist_count')) ?? 0
-  const next = Number(current) + 1
+  const current = Number((await get('waitlist_count')) ?? 0)
+
+  if (current >= TOTAL_FREE_SPOTS) {
+    console.log('[subscribe] already at cap, skipping increment')
+    return current
+  }
+
+  const next = current + 1
 
   const edgeConfigId = getEdgeConfigId()
   const res = await fetch(

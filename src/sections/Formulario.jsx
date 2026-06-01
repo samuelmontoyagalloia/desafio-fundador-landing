@@ -13,13 +13,19 @@ export default function Formulario({ remaining, onSubscribed }) {
           <h2 className="font-display font-bold text-[clamp(30px,4vw,50px)] leading-[1.08] tracking-[-0.02em] text-cream mt-[22px] [text-wrap:balance] m-0">
             Los primeros 5 cupos son gratis.
           </h2>
-          <p className="font-display font-light text-[19px] leading-[1.55] tracking-[-0.005em] text-cream/85 mt-[18px] m-0">
-            Quedan{' '}
-            <strong className="font-bold text-cream">
-              {remaining !== null ? remaining : '—'} de 5
-            </strong>{' '}
-            lugares gratuitos. Después, el precio sube.
-          </p>
+          {remaining === 0 ? (
+            <p className="font-display font-light text-[19px] leading-[1.55] tracking-[-0.005em] text-cream/85 mt-[18px] m-0">
+              Los cupos gratuitos se agotaron. Regístrate para ser el primero en el próximo ciclo.
+            </p>
+          ) : (
+            <p className="font-display font-light text-[19px] leading-[1.55] tracking-[-0.005em] text-cream/85 mt-[18px] m-0">
+              Quedan{' '}
+              <strong className="font-bold text-cream">
+                {remaining !== null ? remaining : '—'} de 5
+              </strong>{' '}
+              lugares gratuitos. Después, el precio sube.
+            </p>
+          )}
           <div className="mt-[34px]">
             <WaitlistForm onSubscribed={onSubscribed} />
           </div>
