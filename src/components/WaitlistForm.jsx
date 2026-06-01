@@ -54,9 +54,11 @@ const KIT_CSS = `
 const ERROR_MSG = 'En este momento no pudimos registrarte, intenta más tarde'
 
 const LS_KEY = 'wl_submitted'
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function WaitlistForm({ onSubscribed }) {
   const [succeeded, setSucceeded] = useState(() => !!localStorage.getItem(LS_KEY))
+  const [validationError, setValidationError] = useState(null)
   const ref = useRef(null)
   const counted = useRef(false)
 
@@ -114,6 +116,26 @@ export default function WaitlistForm({ onSubscribed }) {
           if (li.textContent.trim() !== ERROR_MSG) li.textContent = ERROR_MSG
         })
       }
+      const form = ref.current.querySelector('form')
+      if (form && !form._valAttached) {
+        form._valAttached = true
+        const emailInput = form.querySelector('input[name="email_address"]')
+        if (emailInput) emailInput.addEventListener('input', () => setValidationError(null))
+        form.addEventListener('submit', (e) => {
+          const email = (form.querySelector('input[name="email_address"]')?.value ?? '').trim()
+          if (!email) {
+            e.preventDefault(); e.stopImmediatePropagation()
+            setValidationError('Por favor ingresa tu email')
+            return
+          }
+          if (!EMAIL_RE.test(email)) {
+            e.preventDefault(); e.stopImmediatePropagation()
+            setValidationError('Por favor ingresa un email válido')
+            return
+          }
+          setValidationError(null)
+        }, true)
+      }
     })
     localObserver.observe(ref.current, { childList: true, subtree: true })
 
@@ -140,5 +162,14 @@ export default function WaitlistForm({ onSubscribed }) {
     )
   }
 
-  return <div ref={ref} />
+  return (
+    <>
+      <div ref={ref} data-testid="kit-container" />
+      {validationError && (
+        <p role="alert" className="font-body text-[13px] font-medium text-[#FECACA] mt-2 text-center">
+          {validationError}
+        </p>
+      )}
+    </>
+  )
 }
