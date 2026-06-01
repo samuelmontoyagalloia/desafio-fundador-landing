@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const KIT_CSS = `
   /* ── Kill modal / overlay ── */
@@ -19,6 +19,7 @@ const KIT_CSS = `
 `
 
 export default function WaitlistForm({ onSubscribed }) {
+  const [succeeded, setSucceeded] = useState(false)
   const ref = useRef(null)
   const lastEmail = useRef('')
   const counted = useRef(false)
@@ -67,16 +68,18 @@ export default function WaitlistForm({ onSubscribed }) {
         })
       }
 
-      // ── Detect Kit success state → update counter ──
+      // ── Detect Kit success state → hide form, show custom message, update counter ──
       const success = ref.current.querySelector('[data-element="success"], .formkit-alert-success')
       if (success && !counted.current) {
         counted.current = true
+        setSucceeded(true)
         fetch('/api/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: lastEmail.current }),
-        }).catch(() => {})
-        onSubscribed?.()
+        })
+          .then(() => onSubscribed?.())
+          .catch(() => onSubscribed?.())
       }
     }
 
@@ -100,6 +103,14 @@ export default function WaitlistForm({ onSubscribed }) {
       if (document.head.contains(style)) document.head.removeChild(style)
     }
   }, [onSubscribed])
+
+  if (succeeded) {
+    return (
+      <p className="font-display font-semibold text-[18px] tracking-[-0.01em] text-cream">
+        ¡Tu lugar está reservado! Te avisamos cuando abramos.
+      </p>
+    )
+  }
 
   return <div ref={ref} />
 }
