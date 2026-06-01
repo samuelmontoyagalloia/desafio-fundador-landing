@@ -5,7 +5,11 @@ const TOTAL_FREE_SPOTS = 5
 export function useSubscriberCount() {
   const [remaining, setRemaining] = useState(TOTAL_FREE_SPOTS)
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback((knownRemaining) => {
+    if (typeof knownRemaining === 'number') {
+      setRemaining(knownRemaining)
+      return
+    }
     fetch('/api/subscribers')
       .then(res => res.json())
       .then(data => {

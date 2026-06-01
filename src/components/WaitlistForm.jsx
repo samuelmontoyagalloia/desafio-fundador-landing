@@ -34,7 +34,8 @@ export default function WaitlistForm({ onSubscribed }) {
               counted.current = true
               setSucceeded(true)
               origFetch('/api/subscribe', { method: 'POST' })
-                .then(() => onSubscribed?.())
+                .then(r => r.json())
+                .then(data => onSubscribed?.(typeof data.remaining === 'number' ? data.remaining : undefined))
                 .catch(() => onSubscribed?.())
             }
           }).catch(() => {})

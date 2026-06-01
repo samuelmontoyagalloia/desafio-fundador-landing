@@ -1,12 +1,14 @@
 import { get } from '@vercel/edge-config'
 
+const TOTAL_FREE_SPOTS = 5
+
 function getEdgeConfigId() {
   return new URL(process.env.EDGE_CONFIG).pathname.replace('/', '')
 }
 
 async function incrementWaitlistCount() {
   const current = (await get('waitlist_count')) ?? 0
-  const next = current + 1
+  const next = Number(current) + 1
 
   const edgeConfigId = getEdgeConfigId()
   const res = await fetch(
@@ -29,6 +31,7 @@ async function incrementWaitlistCount() {
   }
 
   console.log('[subscribe] waitlist_count after increment:', next)
+  return next
 }
 
 export default async function handler(req, res) {
@@ -37,8 +40,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    await incrementWaitlistCount()
-    return res.status(200).json({ ok: true })
+    const next = await incrementWaitlistCount()
+    const remaining = Math.max(0, TOTAL_FREE_SPOTS - next)
+    return res.status(200).json({ ok: true, remaining })
   } catch (err) {
     console.error('[subscribe] Edge Config increment failed:', err.message)
     return res.status(500).json({ error: 'Counter update failed', detail: err.message })
