@@ -32,31 +32,47 @@ export default function Footer() {
   return (
     <footer className="bg-ink">
       <div className="max-w-[1120px] mx-auto px-6 md:px-10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between py-9 gap-6 font-body text-[13px] font-light text-stone">
-          <span className="font-display font-bold text-[15px] tracking-[-0.01em] text-cream inline-flex items-center gap-[9px]">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between py-9 font-body text-[13px] font-light text-stone">
+
+          {/* Brand — centered on mobile with bottom divider; left-aligned item on desktop */}
+          <span className="
+            inline-flex items-center gap-[9px]
+            justify-center md:justify-start
+            font-display font-bold text-[15px] tracking-[-0.01em] text-cream
+            pb-6 border-b border-white/10
+            md:pb-0 md:border-none
+          ">
             <span className="w-[7px] h-[7px] rounded-full bg-electric-light flex-none" />
             El Desafío del Fundador
           </span>
 
-          <div className="flex items-center gap-5">
-            {SOCIAL_LINKS.map(({ name, href, icon }) => (
-              <a
-                key={name}
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={name}
-                className="text-stone hover:text-cream transition-colors duration-200"
-              >
-                {icon}
-              </a>
-            ))}
-          </div>
+          {/*
+            On mobile  → flex row: socials left, copyright right (justify-between)
+            On desktop → display:contents dissolves this wrapper so its two children
+                         become direct flex items of the outer row alongside brand
+          */}
+          <div className="flex items-center justify-between gap-6 mt-6 md:mt-0 md:contents">
 
-          <span>
-            © 2026 Samuel Montoya.
-            <br className="md:hidden" /> Todos los derechos reservados.
-          </span>
+            <div className="flex items-center gap-5">
+              {SOCIAL_LINKS.map(({ name, href, icon }) => (
+                <a
+                  key={name}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={name}
+                  className="text-stone hover:text-cream transition-colors duration-200"
+                >
+                  {icon}
+                </a>
+              ))}
+            </div>
+
+            <span className="text-right md:text-left">
+              © 2026 Samuel Montoya.<br className="md:hidden" /> Todos los derechos reservados.
+            </span>
+
+          </div>
         </div>
       </div>
     </footer>
