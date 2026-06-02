@@ -45,6 +45,45 @@ function makeSuccessFetchMock({ remaining = 4 } = {}) {
   })
 }
 
+// ─── StrictMode double-mount guard ────────────────────────────────────────
+//
+// React 18 StrictMode runs every useEffect twice (mount → cleanup → remount)
+// while keeping the DOM alive between the cleanup and the remount.
+// Without a proper cleanup the Kit script stays in the container, Kit's script
+// runs a second time, and a duplicate raw form ("SUBSCRIBE") appears below the
+// styled one ("QUIERO MI LUGAR →").
+//
+// The fix calls script.remove() in the cleanup.  The test below verifies that
+// the script element is gone from the container after cleanup fires, which is
+// the invariant that prevents Kit from injecting a second form on remount.
+
+describe('WaitlistForm — StrictMode double-mount guard', () => {
+  afterEach(() => {
+    localStorage.removeItem(LS_KEY)
+    vi.restoreAllMocks()
+  })
+
+  it('removes the Kit script element on cleanup so StrictMode remount cannot inject a second form', () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      clone: () => ({ json: () => Promise.resolve({}) }),
+      ok: true,
+      json: () => Promise.resolve({}),
+    })
+
+    const { unmount } = render(<WaitlistForm onSubscribed={vi.fn()} />)
+    const container = screen.getByTestId('kit-container')
+
+    // useEffect appends the Kit <script data-uid="…"> to the container.
+    // Querying the container (not the document) works even after detach.
+    expect(container.querySelector('script[data-uid="2ee48b4cf7"]')).toBeTruthy()
+
+    unmount() // triggers the useEffect cleanup → script.remove() must fire
+
+    // The script must be gone so Kit cannot re-run on the second mount
+    expect(container.querySelector('script[data-uid="2ee48b4cf7"]')).toBeNull()
+  })
+})
+
 // ─── localStorage dedup ────────────────────────────────────────────────────
 
 describe('WaitlistForm — localStorage dedup', () => {

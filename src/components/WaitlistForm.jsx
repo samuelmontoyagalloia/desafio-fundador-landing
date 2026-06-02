@@ -151,6 +151,8 @@ export default function WaitlistForm({ onSubscribed }) {
       localObserver.disconnect()
       bodyObserver.disconnect()
       if (document.head.contains(style)) document.head.removeChild(style)
+      script.remove()
+      ref.current?.querySelectorAll('.formkit-form').forEach(el => el.remove())
     }
   }, [onSubscribed])
 
