@@ -1,6 +1,6 @@
 import { get } from '@vercel/edge-config'
 
-const TOTAL_FREE_SPOTS = 5
+const TOTAL_FREE_SPOTS = 6
 
 function getEdgeConfigId() {
   return new URL(process.env.EDGE_CONFIG).pathname.replace('/', '')

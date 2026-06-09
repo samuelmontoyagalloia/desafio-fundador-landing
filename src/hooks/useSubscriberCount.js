@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const TOTAL_FREE_SPOTS = 5
+const TOTAL_SPOTS = 6
 
 export function useSubscriberCount() {
-  const [remaining, setRemaining] = useState(TOTAL_FREE_SPOTS)
+  const [remaining, setRemaining] = useState(4)
 
   const refresh = useCallback((knownRemaining) => {
     if (typeof knownRemaining === 'number') {

@@ -5,7 +5,7 @@ import Footer from '../sections/Footer'
 describe('Footer', () => {
   it('renders the brand name', () => {
     render(<Footer />)
-    expect(screen.getByText('El Desafío del Fundador')).toBeInTheDocument()
+    expect(screen.getByText('Encuentra tu negocio — Samuel Montoya')).toBeInTheDocument()
   })
 
   it('renders the copyright notice', () => {

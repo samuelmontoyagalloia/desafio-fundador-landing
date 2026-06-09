@@ -43,7 +43,7 @@ export default function Footer() {
             md:pb-0 md:border-none
           ">
             <span className="w-[7px] h-[7px] rounded-full bg-electric-light flex-none" />
-            El Desafío del Fundador
+            Encuentra tu negocio — Samuel Montoya
           </span>
 
           {/*

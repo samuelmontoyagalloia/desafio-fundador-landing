@@ -1,6 +1,6 @@
 import { get } from '@vercel/edge-config'
 
-const TOTAL_FREE_SPOTS = 5
+const TOTAL_FREE_SPOTS = 6
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
