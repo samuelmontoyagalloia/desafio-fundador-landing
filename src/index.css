@@ -31,6 +31,15 @@
   100% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0); }
 }
 
+@keyframes indeterminate {
+  0%   { left: -38%; }
+  100% { left: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin { animation-duration: 1.6s; }
+}
+
 @layer base {
   html { scroll-behavior: smooth; }
   body {
