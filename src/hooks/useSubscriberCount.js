@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const TOTAL_FREE_SPOTS = 5
+const TOTAL_SPOTS = 6
 
 export function useSubscriberCount() {
-  const [remaining, setRemaining] = useState(TOTAL_FREE_SPOTS)
+  const [remaining, setRemaining] = useState(4)
 
   const refresh = useCallback((knownRemaining) => {
     if (typeof knownRemaining === 'number') {
@@ -13,7 +13,9 @@ export function useSubscriberCount() {
     fetch('/api/subscribers')
       .then(res => res.json())
       .then(data => {
-        if (typeof data.remaining === 'number') {
+        if (typeof data.count === 'number') {
+          setRemaining(Math.max(0, TOTAL_SPOTS - data.count))
+        } else if (typeof data.remaining === 'number') {
           setRemaining(data.remaining)
         }
       })

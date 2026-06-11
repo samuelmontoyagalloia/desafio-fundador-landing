@@ -29,33 +29,41 @@ afterEach(() => {
 // ─── GET /api/subscribers ─────────────────────────────────────────────────
 
 describe('GET /api/subscribers', () => {
-  it('returns remaining=5 when waitlist_count=0', async () => {
+  it('returns remaining=6 when waitlist_count=0', async () => {
     get.mockResolvedValueOnce(0)
     const res = makeRes()
     await subscribersHandler({ method: 'GET' }, res)
     expect(res.statusCode).toBe(200)
-    expect(res.data.remaining).toBe(5)
+    expect(res.data.remaining).toBe(6)
     expect(res.data.count).toBe(0)
   })
 
-  it('returns remaining=4 when waitlist_count=1', async () => {
+  it('returns remaining=5 when waitlist_count=1', async () => {
     get.mockResolvedValueOnce(1)
     const res = makeRes()
     await subscribersHandler({ method: 'GET' }, res)
     expect(res.statusCode).toBe(200)
-    expect(res.data.remaining).toBe(4)
+    expect(res.data.remaining).toBe(5)
   })
 
-  it('returns remaining=1 when waitlist_count=4', async () => {
+  it('returns remaining=2 when waitlist_count=4', async () => {
     get.mockResolvedValueOnce(4)
+    const res = makeRes()
+    await subscribersHandler({ method: 'GET' }, res)
+    expect(res.statusCode).toBe(200)
+    expect(res.data.remaining).toBe(2)
+  })
+
+  it('returns remaining=1 when waitlist_count=5', async () => {
+    get.mockResolvedValueOnce(5)
     const res = makeRes()
     await subscribersHandler({ method: 'GET' }, res)
     expect(res.statusCode).toBe(200)
     expect(res.data.remaining).toBe(1)
   })
 
-  it('returns remaining=0 when waitlist_count=5', async () => {
-    get.mockResolvedValueOnce(5)
+  it('returns remaining=0 when waitlist_count=6', async () => {
+    get.mockResolvedValueOnce(6)
     const res = makeRes()
     await subscribersHandler({ method: 'GET' }, res)
     expect(res.statusCode).toBe(200)
@@ -75,7 +83,7 @@ describe('GET /api/subscribers', () => {
     const res = makeRes()
     await subscribersHandler({ method: 'GET' }, res)
     expect(res.statusCode).toBe(200)
-    expect(res.data.remaining).toBe(5)
+    expect(res.data.remaining).toBe(6)
   })
 
   it('returns 500 when Edge Config read fails', async () => {
@@ -109,19 +117,19 @@ describe('POST /api/subscribe', () => {
     await subscribeHandler({ method: 'POST' }, res)
     expect(res.statusCode).toBe(200)
     expect(res.data.ok).toBe(true)
-    expect(res.data.remaining).toBe(4) // 5 - 1
+    expect(res.data.remaining).toBe(5) // 6 - 1
   })
 
-  it('returns remaining=0 when incrementing from count=4 to 5', async () => {
-    get.mockResolvedValueOnce(4)
+  it('returns remaining=0 when incrementing from count=5 to 6', async () => {
+    get.mockResolvedValueOnce(5)
     const res = makeRes()
     await subscribeHandler({ method: 'POST' }, res)
     expect(res.statusCode).toBe(200)
-    expect(res.data.remaining).toBe(0) // 5 - 5
+    expect(res.data.remaining).toBe(0) // 6 - 6
   })
 
-  it('does NOT call Vercel API when already at cap (count=5)', async () => {
-    get.mockResolvedValueOnce(5)
+  it('does NOT call Vercel API when already at cap (count=6)', async () => {
+    get.mockResolvedValueOnce(6)
     const res = makeRes()
     await subscribeHandler({ method: 'POST' }, res)
     expect(res.statusCode).toBe(200)

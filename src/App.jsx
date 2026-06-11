@@ -1,13 +1,14 @@
 import Hero from './sections/Hero'
 import Problema from './sections/Problema'
 import Solucion from './sections/Solucion'
+import Garantia from './sections/Garantia'
 import Formulario from './sections/Formulario'
 import FAQSection from './sections/FAQSection'
 import Footer from './sections/Footer'
 import { useSubscriberCount } from './hooks/useSubscriberCount'
 
 export default function App() {
-  const [remaining, refresh] = useSubscriberCount()
+  const [remaining] = useSubscriberCount()
 
   return (
     <div className="font-body antialiased bg-paper text-ink overflow-x-hidden">
@@ -15,7 +16,8 @@ export default function App() {
       <Hero remaining={remaining} />
       <Problema />
       <Solucion />
-      <Formulario remaining={remaining} onSubscribed={refresh} />
+      <Garantia />
+      <Formulario remaining={remaining} />
       <FAQSection />
       <Footer />
     </div>
