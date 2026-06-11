@@ -37,6 +37,64 @@ describe('Formulario — counter display', () => {
   })
 })
 
+// ─── Formulario — ciclo lleno (isFull) ────────────────────────────────────
+
+describe('Formulario — ciclo lleno (remaining=0)', () => {
+  it('shows "Este ciclo está completo" heading when remaining is 0', () => {
+    render(<Formulario remaining={0} />)
+    expect(screen.getByText(/Este ciclo está completo/)).toBeInTheDocument()
+  })
+
+  it('does NOT show the reservation heading when remaining is 0', () => {
+    render(<Formulario remaining={0} />)
+    expect(screen.queryByText(/Reserva el tuyo/)).not.toBeInTheDocument()
+  })
+
+  it('shows waitlist CTA button when remaining is 0', () => {
+    render(<Formulario remaining={0} />)
+    expect(screen.getByRole('link', { name: /lista de espera/i })).toBeInTheDocument()
+  })
+
+  it('does NOT show "Reservar por WhatsApp" when remaining is 0', () => {
+    render(<Formulario remaining={0} />)
+    expect(screen.queryByRole('link', { name: /Reservar por WhatsApp/i })).not.toBeInTheDocument()
+  })
+
+  it('links to the waitlist WhatsApp URL when remaining is 0', () => {
+    render(<Formulario remaining={0} />)
+    const link = screen.getByRole('link', { name: /lista de espera/i })
+    expect(link).toHaveAttribute('href', expect.stringContaining('lista%20de%20espera'))
+  })
+
+  it('links to the reservation WhatsApp URL when not full', () => {
+    render(<Formulario remaining={4} />)
+    const link = screen.getByRole('link', { name: /Reservar por WhatsApp/i })
+    expect(link).toHaveAttribute('href', expect.stringContaining('quiero%20mi%20lugar'))
+  })
+
+  it('shows "6 cupos de este ciclo" message when remaining is 0', () => {
+    render(<Formulario remaining={0} />)
+    expect(screen.getByText(/6 cupos de este ciclo/)).toBeInTheDocument()
+  })
+
+  it('shows waitlist support text when remaining is 0', () => {
+    render(<Formulario remaining={0} />)
+    expect(screen.getByText(/nuevo ciclo disponible/)).toBeInTheDocument()
+  })
+
+  it('is NOT full when remaining is 1 — shows normal CTA', () => {
+    render(<Formulario remaining={1} />)
+    expect(screen.getByRole('link', { name: /Reservar por WhatsApp/i })).toBeInTheDocument()
+    expect(screen.queryByText(/Este ciclo está completo/)).not.toBeInTheDocument()
+  })
+
+  it('is NOT full when remaining is null — shows normal CTA (loading fallback)', () => {
+    render(<Formulario remaining={null} />)
+    expect(screen.getByRole('link', { name: /Reservar por WhatsApp/i })).toBeInTheDocument()
+    expect(screen.queryByText(/Este ciclo está completo/)).not.toBeInTheDocument()
+  })
+})
+
 // ─── Hero ──────────────────────────────────────────────────────────────────
 
 describe('Hero — counter display', () => {
@@ -119,6 +177,43 @@ describe('useSubscriberCount', () => {
     const { result } = renderHook(() => useSubscriberCount())
     await new Promise((r) => setTimeout(r, 50))
     expect(result.current[0]).toBe(4)
+  })
+
+  it('computes remaining from count=4 → remaining=2', async () => {
+    global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ count: 4 }) })
+    const { result } = renderHook(() => useSubscriberCount())
+    await waitFor(() => expect(result.current[0]).toBe(2))
+  })
+
+  it('computes remaining=0 from count=6 (all spots taken)', async () => {
+    global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ count: 6 }) })
+    const { result } = renderHook(() => useSubscriberCount())
+    await waitFor(() => expect(result.current[0]).toBe(0))
+  })
+
+  it('computes remaining=6 from count=0 (no spots taken)', async () => {
+    global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ count: 0 }) })
+    const { result } = renderHook(() => useSubscriberCount())
+    await waitFor(() => expect(result.current[0]).toBe(6))
+  })
+
+  it('clamps remaining to 0 when count exceeds total (count=99)', async () => {
+    global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ count: 99 }) })
+    const { result } = renderHook(() => useSubscriberCount())
+    await waitFor(() => expect(result.current[0]).toBe(0))
+  })
+
+  it('prefers count over remaining when both fields are present', async () => {
+    // count=2 → remaining should be 4, ignoring the stale remaining=1
+    global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ count: 2, remaining: 1 }) })
+    const { result } = renderHook(() => useSubscriberCount())
+    await waitFor(() => expect(result.current[0]).toBe(4))
+  })
+
+  it('falls back to remaining field when count is absent', async () => {
+    global.fetch.mockResolvedValueOnce({ json: () => Promise.resolve({ remaining: 3 }) })
+    const { result } = renderHook(() => useSubscriberCount())
+    await waitFor(() => expect(result.current[0]).toBe(3))
   })
 
   it('refresh(knownRemaining) updates state immediately without a fetch', async () => {

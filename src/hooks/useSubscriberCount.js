@@ -13,7 +13,9 @@ export function useSubscriberCount() {
     fetch('/api/subscribers')
       .then(res => res.json())
       .then(data => {
-        if (typeof data.remaining === 'number') {
+        if (typeof data.count === 'number') {
+          setRemaining(Math.max(0, TOTAL_SPOTS - data.count))
+        } else if (typeof data.remaining === 'number') {
           setRemaining(data.remaining)
         }
       })
